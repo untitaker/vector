@@ -29,7 +29,7 @@ where
     T: io::AsyncWrite + Send + Sync + Unpin,
 {
     async fn run(mut self: Box<Self>, mut input: BoxStream<'_, Event>) -> Result<(), ()> {
-        let bytes_sent = register!(BytesSent::from(Protocol("console".into(),)));
+        let bytes_sent = register!(BytesSent::from(Protocol("sentry".into(),)));
         let events_sent = register!(EventsSent::from(Output(None)));
         while let Some(mut event) = input.next().await {
             let event_byte_size = event.estimated_json_encoded_size_of();

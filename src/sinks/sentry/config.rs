@@ -9,7 +9,7 @@ use vector_lib::configurable::configurable_component;
 use crate::{
     codecs::{Encoder, EncodingConfigWithFraming, SinkType},
     config::{AcknowledgementsConfig, GenerateConfig, Input, SinkConfig, SinkContext},
-    sinks::{console::sink::WriterSink, Healthcheck, VectorSink},
+    sinks::{sentry::sink::WriterSink, Healthcheck, VectorSink},
 };
 
 /// The [standard stream][standard_streams] to write to.
@@ -32,14 +32,14 @@ pub enum Target {
     Stderr,
 }
 
-/// Configuration for the `console` sink.
+/// Configuration for the `sentry` sink.
 #[configurable_component(sink(
-    "console",
+    "sentry",
     "Display observability events in the console, which can be useful for debugging purposes."
 ))]
 #[derive(Clone, Debug)]
 #[serde(deny_unknown_fields)]
-pub struct ConsoleSinkConfig {
+pub struct SentrySinkConfig {
     #[configurable(derived)]
     #[serde(default = "default_target")]
     pub target: Target,
@@ -60,7 +60,7 @@ const fn default_target() -> Target {
     Target::Stdout
 }
 
-impl GenerateConfig for ConsoleSinkConfig {
+impl GenerateConfig for SentrySinkConfig {
     fn generate_config() -> toml::Value {
         toml::Value::try_from(Self {
             target: Target::Stdout,
@@ -72,8 +72,8 @@ impl GenerateConfig for ConsoleSinkConfig {
 }
 
 #[async_trait::async_trait]
-#[typetag::serde(name = "console")]
-impl SinkConfig for ConsoleSinkConfig {
+#[typetag::serde(name = "sentry")]
+impl SinkConfig for SentrySinkConfig {
     async fn build(&self, _cx: SinkContext) -> crate::Result<(VectorSink, Healthcheck)> {
         let transformer = self.encoding.transformer();
         let (framer, serializer) = self.encoding.build(SinkType::StreamBased)?;
@@ -110,6 +110,6 @@ mod tests {
 
     #[test]
     fn generate_config() {
-        crate::test_util::test_generate_config::<ConsoleSinkConfig>();
+        crate::test_util::test_generate_config::<SentrySinkConfig>();
     }
 }
