@@ -1,36 +1,15 @@
+use vector_lib::configurable::configurable_component;
 use futures::{future, FutureExt};
-use tokio::io;
 use vector_lib::codecs::{
-    encoding::{Framer, FramingConfig},
+    encoding::{FramingConfig},
     JsonSerializerConfig,
 };
-use vector_lib::configurable::configurable_component;
 
 use crate::{
-    codecs::{Encoder, EncodingConfigWithFraming, SinkType},
+    codecs::{EncodingConfigWithFraming},
     config::{AcknowledgementsConfig, GenerateConfig, Input, SinkConfig, SinkContext},
-    sinks::{sentry::metrics::sink::WriterSink, Healthcheck, VectorSink},
+    sinks::{sentry::metrics::sink::SentryMetricsSink, Healthcheck, VectorSink},
 };
-
-/// The [standard stream][standard_streams] to write to.
-///
-/// [standard_streams]: https://en.wikipedia.org/wiki/Standard_streams
-#[configurable_component]
-#[derive(Clone, Debug, Derivative)]
-#[derivative(Default)]
-#[serde(rename_all = "lowercase")]
-pub enum Target {
-    /// Write output to [STDOUT][stdout].
-    ///
-    /// [stdout]: https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)
-    #[derivative(Default)]
-    Stdout,
-
-    /// Write output to [STDERR][stderr].
-    ///
-    /// [stderr]: https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)
-    Stderr,
-}
 
 /// Configuration for the `sentry_metrics` sink.
 #[configurable_component(sink(
@@ -41,8 +20,7 @@ pub enum Target {
 #[serde(deny_unknown_fields)]
 pub struct SentrySinkConfig {
     #[configurable(derived)]
-    #[serde(default = "default_target")]
-    pub target: Target,
+    pub dsn: Option<String>,
 
     #[serde(flatten)]
     pub encoding: EncodingConfigWithFraming,
@@ -56,14 +34,10 @@ pub struct SentrySinkConfig {
     pub acknowledgements: AcknowledgementsConfig,
 }
 
-const fn default_target() -> Target {
-    Target::Stdout
-}
-
 impl GenerateConfig for SentrySinkConfig {
     fn generate_config() -> toml::Value {
         toml::Value::try_from(Self {
-            target: Target::Stdout,
+            dsn: None::<String>,
             encoding: (None::<FramingConfig>, JsonSerializerConfig::default()).into(),
             acknowledgements: Default::default(),
         })
@@ -75,22 +49,8 @@ impl GenerateConfig for SentrySinkConfig {
 #[typetag::serde(name = "sentry_metrics")]
 impl SinkConfig for SentrySinkConfig {
     async fn build(&self, _cx: SinkContext) -> crate::Result<(VectorSink, Healthcheck)> {
-        let transformer = self.encoding.transformer();
-        let (framer, serializer) = self.encoding.build(SinkType::StreamBased)?;
-        let encoder = Encoder::<Framer>::new(framer, serializer);
-
-        let sink: VectorSink = match self.target {
-            Target::Stdout => VectorSink::from_event_streamsink(WriterSink {
-                output: io::stdout(),
-                transformer,
-                encoder,
-            }),
-            Target::Stderr => VectorSink::from_event_streamsink(WriterSink {
-                output: io::stderr(),
-                transformer,
-                encoder,
-            }),
-        };
+        let dsn = self.dsn.clone();
+        let sink: VectorSink = VectorSink::from_event_streamsink(SentryMetricsSink {dsn});
 
         Ok((sink, future::ok(()).boxed()))
     }
@@ -101,15 +61,5 @@ impl SinkConfig for SentrySinkConfig {
 
     fn acknowledgements(&self) -> &AcknowledgementsConfig {
         &self.acknowledgements
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn generate_config() {
-        crate::test_util::test_generate_config::<SentrySinkConfig>();
     }
 }

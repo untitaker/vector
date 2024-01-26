@@ -1,4 +1,4 @@
 mod config;
 mod sink;
 
-pub use config::{SentrySinkConfig, Target};
+pub use config::{SentrySinkConfig};
