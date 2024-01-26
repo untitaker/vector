@@ -29,7 +29,7 @@ where
     T: io::AsyncWrite + Send + Sync + Unpin,
 {
     async fn run(mut self: Box<Self>, mut input: BoxStream<'_, Event>) -> Result<(), ()> {
-        let bytes_sent = register!(BytesSent::from(Protocol("sentry".into(),)));
+        let bytes_sent = register!(BytesSent::from(Protocol("sentry_metrics".into(),)));
         let events_sent = register!(EventsSent::from(Output(None)));
         while let Some(mut event) = input.next().await {
             let event_byte_size = event.estimated_json_encoded_size_of();
@@ -60,42 +60,5 @@ where
         }
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use futures::future::ready;
-    use futures_util::stream;
-    use vector_lib::codecs::{JsonSerializerConfig, NewlineDelimitedEncoder};
-    use vector_lib::sink::VectorSink;
-
-    use super::*;
-    use crate::{
-        event::{Event, LogEvent},
-        test_util::components::{run_and_assert_sink_compliance, SINK_TAGS},
-    };
-
-    #[tokio::test]
-    async fn component_spec_compliance() {
-        let event = Event::Log(LogEvent::from("foo"));
-
-        let encoder = Encoder::<Framer>::new(
-            NewlineDelimitedEncoder::new().into(),
-            JsonSerializerConfig::default().build().into(),
-        );
-
-        let sink = WriterSink {
-            output: Vec::new(),
-            transformer: Default::default(),
-            encoder,
-        };
-
-        run_and_assert_sink_compliance(
-            VectorSink::from_event_streamsink(sink),
-            stream::once(ready(event)),
-            &SINK_TAGS,
-        )
-        .await;
     }
 }

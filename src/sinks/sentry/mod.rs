@@ -1,4 +1,2 @@
-mod config;
-mod sink;
-
-pub use config::{SentrySinkConfig, Target};
+#[cfg(feature = "sinks-sentry_metrics")]
+pub mod metrics;

@@ -9,7 +9,7 @@ use vector_lib::configurable::configurable_component;
 use crate::{
     codecs::{Encoder, EncodingConfigWithFraming, SinkType},
     config::{AcknowledgementsConfig, GenerateConfig, Input, SinkConfig, SinkContext},
-    sinks::{sentry::sink::WriterSink, Healthcheck, VectorSink},
+    sinks::{sentry::metrics::sink::WriterSink, Healthcheck, VectorSink},
 };
 
 /// The [standard stream][standard_streams] to write to.
@@ -32,10 +32,10 @@ pub enum Target {
     Stderr,
 }
 
-/// Configuration for the `sentry` sink.
+/// Configuration for the `sentry_metrics` sink.
 #[configurable_component(sink(
-    "sentry",
-    "Display observability events in the console, which can be useful for debugging purposes."
+    "sentry_metrics",
+    "Send metrics to Sentry."
 ))]
 #[derive(Clone, Debug)]
 #[serde(deny_unknown_fields)]
@@ -72,7 +72,7 @@ impl GenerateConfig for SentrySinkConfig {
 }
 
 #[async_trait::async_trait]
-#[typetag::serde(name = "sentry")]
+#[typetag::serde(name = "sentry_metrics")]
 impl SinkConfig for SentrySinkConfig {
     async fn build(&self, _cx: SinkContext) -> crate::Result<(VectorSink, Healthcheck)> {
         let transformer = self.encoding.transformer();

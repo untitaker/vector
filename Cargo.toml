@@ -667,7 +667,7 @@ sinks-metrics = [
   "sinks-kafka",
   "sinks-prometheus",
   "sinks-sematext",
-  "sinks-sentry",
+  "sinks-sentry_metrics",
   "sinks-statsd",
   "sinks-vector",
   "sinks-splunk_hec"
@@ -713,7 +713,7 @@ sinks-prometheus = ["dep:base64", "vector-lib/prometheus"]
 sinks-pulsar = ["dep:apache-avro", "dep:pulsar", "dep:lru"]
 sinks-redis = ["dep:redis"]
 sinks-sematext = ["sinks-elasticsearch", "sinks-influxdb"]
-sinks-sentry= []
+sinks-sentry_metrics = []
 sinks-socket = ["sinks-utils-udp"]
 sinks-splunk_hec = []
 sinks-statsd = ["sinks-utils-udp", "tokio-util/net"]
