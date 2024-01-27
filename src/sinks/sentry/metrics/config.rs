@@ -20,7 +20,7 @@ use crate::{
 #[serde(deny_unknown_fields)]
 pub struct SentrySinkConfig {
     #[configurable(derived)]
-    pub dsn: Option<String>,
+    pub dsn: String,
 
     #[serde(flatten)]
     pub encoding: EncodingConfigWithFraming,
@@ -37,7 +37,7 @@ pub struct SentrySinkConfig {
 impl GenerateConfig for SentrySinkConfig {
     fn generate_config() -> toml::Value {
         toml::Value::try_from(Self {
-            dsn: None::<String>,
+            dsn: String::new(),
             encoding: (None::<FramingConfig>, JsonSerializerConfig::default()).into(),
             acknowledgements: Default::default(),
         })
