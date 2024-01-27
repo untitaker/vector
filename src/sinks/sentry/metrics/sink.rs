@@ -26,7 +26,7 @@ impl StreamSink<Event> for SentryMetricsSink {
             let name = metric.series().name().name.clone();
             match metric.data().value() {
                 MetricValue::Gauge { value } => {
-                    Metric::gauge(name, *value).with_unit(FractionUnit::Ratio).send();
+                    Metric::gauge(name.clone(), *value).with_unit(FractionUnit::Ratio).send();
                     println!("sending {} for {} to {}", value, name, dsn);
                 },
                 _ => {
