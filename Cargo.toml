@@ -235,6 +235,9 @@ sha2 = { version = "0.10.8", default-features = false, optional = true }
 # GreptimeDB
 greptimedb-client = { git = "https://github.com/GreptimeTeam/greptimedb-ingester-rust.git", rev = "4cb19ec47eeaf634c451d9ae438dac445a8a3dce", optional = true }
 
+# Sentry
+sentry = { version = "0.32.1", features = ["UNSTABLE_metrics"] }
+
 # External libs
 arc-swap = { version = "1.6", default-features = false, optional = true }
 async-compression = { version = "0.4.6", default-features = false, features = ["tokio", "gzip", "zstd"], optional = true }
@@ -668,6 +671,7 @@ sinks-metrics = [
   "sinks-kafka",
   "sinks-prometheus",
   "sinks-sematext",
+  "sinks-sentry_metrics",
   "sinks-statsd",
   "sinks-vector",
   "sinks-splunk_hec"
@@ -713,6 +717,7 @@ sinks-prometheus = ["dep:base64", "vector-lib/prometheus"]
 sinks-pulsar = ["dep:apache-avro", "dep:pulsar", "dep:lru"]
 sinks-redis = ["dep:redis"]
 sinks-sematext = ["sinks-elasticsearch", "sinks-influxdb"]
+sinks-sentry_metrics = []
 sinks-socket = ["sinks-utils-udp"]
 sinks-splunk_hec = []
 sinks-statsd = ["sinks-utils-udp", "tokio-util/net"]
