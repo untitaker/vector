@@ -15,7 +15,7 @@ VERSION="${VECTOR_VERSION:-"$(cargo vdev version)"}"
 DATE="${DATE:-"$(date -u +%Y-%m-%d)"}"
 PLATFORM="${PLATFORM:-}"
 PUSH="${PUSH:-"true"}"
-REPO="${REPO:-"timberio/vector"}"
+REPO="${REPO:-"ghcr.io/untitaker/vector"}"
 
 #
 # Functions
