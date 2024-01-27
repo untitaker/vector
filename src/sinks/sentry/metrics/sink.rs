@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use futures_util::future::ready;
 use futures::{stream::BoxStream, StreamExt};
+use futures_util::future::ready;
 use sentry::metrics::Metric;
 
 use crate::{
@@ -55,4 +55,3 @@ impl StreamSink<Event> for SentryMetricsSink {
         Ok(())
     }
 }
-
