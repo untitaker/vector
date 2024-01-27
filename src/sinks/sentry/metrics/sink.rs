@@ -2,10 +2,9 @@ use async_trait::async_trait;
 use futures::{stream::BoxStream, StreamExt};
 use sentry::metrics::FractionUnit;
 use sentry::metrics::Metric;
-use sysinfo::System;
 
 use crate::{
-    event::{Event},
+    event::{Event, MetricValue},
     sinks::util::StreamSink,
 };
 
@@ -22,14 +21,21 @@ impl StreamSink<Event> for SentryMetricsSink {
           ..Default::default()
         }));
 
-        let mut sys = System::new_all();
-        while let Some(_event) = input.next().await {
-            sys.refresh_memory();
-            let memory = sys.used_memory() as f64 / sys.total_memory() as f64;
-            Metric::gauge("memory", memory).with_unit(FractionUnit::Ratio).send();
-				    println!("sent {} to '{}'", memory, dsn);
+        while let Some(event) = input.next().await {
+            let metric = event.as_metric();
+            let name = metric.series().name().name.clone();
+            match metric.data().value() {
+                MetricValue::Gauge { value } => {
+                    Metric::gauge(name, *value).with_unit(FractionUnit::Ratio).send();
+                    println!("sending {} for {} to {}", value, name, dsn);
+                },
+                _ => {
+                    println!("{} unhandled", name);
+                }
+            }
         }
 
         Ok(())
     }
 }
+
