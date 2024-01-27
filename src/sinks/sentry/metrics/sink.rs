@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use futures::{stream::BoxStream, StreamExt};
-use sentry::metrics::FractionUnit;
 use sentry::metrics::Metric;
 
 use crate::{
@@ -25,12 +24,13 @@ impl StreamSink<Event> for SentryMetricsSink {
             let metric = event.as_metric();
             let name = metric.series().name().name.clone();
             match metric.data().value() {
+                MetricValue::Counter { .. } => {
+                    Metric::count(name).send();
+                },
                 MetricValue::Gauge { value } => {
-                    Metric::gauge(name.clone(), *value).with_unit(FractionUnit::Ratio).send();
-                    println!("sending {} for {} to {}", value, name, dsn);
+                    Metric::gauge(name, *value).send();
                 },
                 _ => {
-                    println!("{} unhandled", name);
                 }
             }
         }
