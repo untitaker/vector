@@ -19,32 +19,28 @@ impl StreamSink<Event> for SentryMetricsSink {
             // filter out any non-metric events
             .filter_map(|event| ready(event.try_into_metric()));
 
-        let client = sentry::Client::from_config(self.dsn);
+        let _guard = sentry::init(self.dsn);
 
         while let Some(metric) = input.next().await {
             let name = metric.series().name().name.clone();
             match metric.data().value() {
                 MetricValue::Counter { value } => {
-                    let metric = Metric::incr(name.clone(), *value).finish();
-                    client.add_metric(metric);
+                    Metric::incr(name.clone(), *value).send();
                 }
                 MetricValue::Gauge { value } => {
-                    let metric = Metric::gauge(name.clone(), *value).finish();
-                    client.add_metric(metric);
+                    Metric::gauge(name.clone(), *value).send();
                 }
                 MetricValue::Set { values } => {
                     for value in values {
                         // XXX: why not submit the entire set at once?
-                        let metric = Metric::set(name.clone(), &value).finish();
-                        client.add_metric(metric);
+                        Metric::set(name.clone(), &value).send();
                     }
                 }
                 MetricValue::Distribution { samples, .. } => {
                     for sample in samples {
                         for _ in 0..sample.rate {
                             // XXX: sentry should allow me to submit value + count
-                            let metric = Metric::distribution(name.clone(), sample.value).finish();
-                            client.add_metric(metric);
+                            Metric::distribution(name.clone(), sample.value).send();
                         }
                     }
                 }
