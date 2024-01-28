@@ -19,6 +19,7 @@ impl StreamSink<Event> for SentryMetricsSink {
             // filter out any non-metric events
             .filter_map(|event| ready(event.try_into_metric()));
 
+        // https://github.com/getsentry/sentry-rust/issues/637
         let _guard = sentry::init(self.dsn);
 
         while let Some(metric) = input.next().await {
