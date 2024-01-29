@@ -26,10 +26,10 @@ impl StreamSink<Event> for SentryMetricsSink {
             let name = metric.series().name().name.clone();
             match metric.data().value() {
                 MetricValue::Counter { value } => {
-                    Metric::incr(name.clone(), *value).send();
+                    Metric::incr(name, *value).send();
                 }
                 MetricValue::Gauge { value } => {
-                    Metric::gauge(name.clone(), *value).send();
+                    Metric::gauge(name, *value).send();
                 }
                 MetricValue::Set { values } => {
                     for value in values {
