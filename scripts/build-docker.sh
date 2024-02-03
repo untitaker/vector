@@ -67,20 +67,17 @@ if [[ "$CHANNEL" == "release" ]]; then
 
   for VERSION_TAG in "$VERSION_EXACT" "$VERSION_MINOR_X" "$VERSION_MAJOR_X" latest; do
     build alpine "$VERSION_TAG"
-    build debian "$VERSION_TAG"
     build distroless-static "$VERSION_TAG"
     build distroless-libc "$VERSION_TAG"
   done
 elif [[ "$CHANNEL" == "nightly" ]]; then
   for VERSION_TAG in "nightly-$DATE" nightly; do
     build alpine "$VERSION_TAG"
-    build debian "$VERSION_TAG"
     build distroless-static "$VERSION_TAG"
     build distroless-libc "$VERSION_TAG"
   done
 elif [[ "$CHANNEL" == "custom" ]]; then
   build alpine "$VERSION"
-  build debian "$VERSION"
   build distroless-static "$VERSION"
   build distroless-libc "$VERSION"
 elif [[ "$CHANNEL" == "test" ]]; then
