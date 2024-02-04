@@ -14,7 +14,7 @@ pub struct SentryMetricsSink {
 }
 
 fn finish_metric(source: &SourceMetric, mut sentry_metric: MetricBuilder) {
-    if let Some(tags) = source.series().tags() {
+    if let Some(tags) = source.tags() {
         for (k, v) in tags.iter_all() {
             if let Some(v) = v {
                 sentry_metric = sentry_metric.with_tag(k.to_owned(), v.to_owned());
@@ -22,7 +22,7 @@ fn finish_metric(source: &SourceMetric, mut sentry_metric: MetricBuilder) {
         }
     }
 
-    if let Some(time) = source.data().time.timestamp {
+    if let Some(time) = source.timestamp() {
         if let Ok(time) = u64::try_from(time.timestamp()) {
             let system_time = UNIX_EPOCH + Duration::from_secs(time);
             // XXX: why does the SDK need a SystemTime here?
