@@ -13,8 +13,8 @@ pub struct SentryMetricsSink {
     pub dsn: String,
 }
 
-fn finish_metric(source: &SourceMetric, mut sentry_metric: MetricBuilder) {
-    if let Some(tags) = source.series().tags() {
+fn finish_metric(source_metric: &SourceMetric, mut sentry_metric: MetricBuilder) {
+    if let Some(tags) = source_metric.tags() {
         for (k, v) in tags.iter_all() {
             if let Some(v) = v {
                 sentry_metric = sentry_metric.with_tag(k.to_owned(), v.to_owned());
@@ -22,7 +22,10 @@ fn finish_metric(source: &SourceMetric, mut sentry_metric: MetricBuilder) {
         }
     }
 
-    if let Some(time) = source.data().time.timestamp {
+    // we need to carry forward the original timestamp as otherwise the SDK will use the current
+    // time. otherwise this causes bad visual artifacts when backpressure happens and unnecessarily
+    // relies on vector's system clock.
+    if let Some(time) = source_metric.timestamp() {
         if let Ok(time) = u64::try_from(time.timestamp()) {
             let system_time = UNIX_EPOCH + Duration::from_secs(time);
             // XXX: why does the SDK need a SystemTime here?
@@ -43,9 +46,14 @@ impl StreamSink<Event> for SentryMetricsSink {
         // https://github.com/getsentry/sentry-rust/issues/637
         let _guard = sentry::init(self.dsn);
 
-        while let Some(metric) = input.next().await {
-            let series = metric.series();
+        while let Some(source_metric) = input.next().await {
+            let series = source_metric.series();
             let series_name = series.name();
+            // in the case of datadog-agent being the source, series_name.namespace can be
+            // system/docker/nginx
+            // series_name.name is the rest of the metric name
+            // without the namespace, we will get metrics like "cpu.usage" instead of
+            // "docker.cpu.usage"
             let mut name = series_name.namespace.clone().unwrap_or_default();
             if !name.is_empty() {
                 name.push('.');
@@ -53,17 +61,17 @@ impl StreamSink<Event> for SentryMetricsSink {
 
             name.push_str(&series_name.name);
 
-            match metric.data().value() {
+            match source_metric.data().value() {
                 MetricValue::Counter { value } => {
-                    finish_metric(&metric, Metric::incr(name, *value));
+                    finish_metric(&source_metric, Metric::incr(name, *value));
                 }
                 MetricValue::Gauge { value } => {
-                    finish_metric(&metric, Metric::gauge(name, *value));
+                    finish_metric(&source_metric, Metric::gauge(name, *value));
                 }
                 MetricValue::Set { values } => {
                     for value in values {
                         // XXX: why not submit the entire set at once?
-                        finish_metric(&metric, Metric::set(name.clone(), &value));
+                        finish_metric(&source_metric, Metric::set(name.clone(), &value));
                     }
                 }
                 MetricValue::Distribution { samples, .. } => {
@@ -71,7 +79,7 @@ impl StreamSink<Event> for SentryMetricsSink {
                         for _ in 0..sample.rate {
                             // XXX: sentry should allow me to submit value + count
                             finish_metric(
-                                &metric,
+                                &source_metric,
                                 Metric::distribution(name.clone(), sample.value),
                             );
                         }
